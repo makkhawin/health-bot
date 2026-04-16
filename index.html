@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
+  <script>
+  // ถ้าคนเข้าเว็บด้วย http ธรรมดา ให้เปลี่ยนเป็น https อัตโนมัติ
+  if (location.protocol !== 'https:') {
+      location.replace(`https:${location.href.substring(location.protocol.length)}`);
+  }
+</script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <meta charset="utf-8">
   <title>🩺 พี่หมอใจดี - เพื่อนคู่คิดสุขภาพนักเรียน</title>
