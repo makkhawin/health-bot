@@ -183,15 +183,28 @@
   </df-messenger>
 
   <script>
-   function sendMessage(text) {
-     Swal.fire({
-       title: 'ส่งอาการให้พี่หมอ',
-       text: 'ลองพูดว่า "' + text + '" หรือพิมพ์ในช่องแชทได้เลยครับ',
-       icon: 'info',
-       confirmButtonText: 'รับทราบ!',
-       confirmButtonColor: '#00acc1'
-     });
-   }
+  function sendMessage(text) {
+    // 1. สั่งให้กล่องแชทขยายออกมาก่อน
+    const dfMessenger = document.querySelector('df-messenger');
+    dfMessenger.setAttribute('expand', 'true');
+
+    // 2. รอจังหวะให้วิดเจ็ตเตรียมตัวสักครู่ แล้วค่อยสั่งพิมพ์
+    setTimeout(() => {
+      try {
+        // เจาะทะลุ Shadow DOM เพื่อเข้าถึงช่อง Input และปุ่มส่งของ Google
+        const chat = dfMessenger.shadowRoot.querySelector('df-messenger-chat');
+        const userInput = chat.shadowRoot.querySelector('df-messenger-user-input');
+        const inputBox = userInput.shadowRoot.querySelector('input');
+        const sendButton = userInput.shadowRoot.querySelector('button');
+
+        // ใส่ข้อความและจำลองการคลิกส่งทันที
+        inputBox.value = text;
+        sendButton.click();
+      } catch (e) {
+        console.error("วิดเจ็ตยังโหลดไม่เสร็จ หรือหาองค์ประกอบไม่เจอ:", e);
+      }
+    }, 500); // รอ 0.5 วินาทีเพื่อให้แอนิเมชันตอนเปิดกล่องแชททำงานเสร็จ
+  }
   </script>
 
 </body>
