@@ -293,6 +293,26 @@
       };
     }
   </script>
-
+// 3. ฟังก์ชันระบบเสียงพูดตอบกลับของพี่หมอ (Text-to-Speech)
+    window.addEventListener('df-response-received', function (event) {
+      try {
+        // ดึงข้อความที่พี่หมอ (บอท) พิมพ์ตอบกลับมา
+        const botReply = event.detail.response.queryResult.fulfillmentText;
+        
+        if (botReply) {
+          // สั่งให้เบราว์เซอร์อ่านออกเสียงข้อความนั้น
+          const speech = new SpeechSynthesisUtterance(botReply);
+          speech.lang = 'th-TH'; // ตั้งค่าเป็นเสียงคนไทย
+          speech.rate = 0.9;     // ความเร็ว (0.9 จะช้าลงนิดนึง ให้เด็กๆ ฟังชัดเจน)
+          speech.pitch = 1.3;    // ปรับเสียงให้แหลมขึ้นนิดนึง (โทนเสียงจะดูใจดี เป็นมิตรมากขึ้น)
+          
+          // ยกเลิกเสียงที่กำลังพูดค้างอยู่ (ถ้ามี) แล้วเริ่มพูดประโยคใหม่
+          window.speechSynthesis.cancel();
+          window.speechSynthesis.speak(speech);
+        }
+      } catch (error) {
+        console.error("ระบบเสียงพูดขัดข้อง:", error);
+      }
+    });
 </body>
 </html>
