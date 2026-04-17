@@ -55,9 +55,22 @@
       animation: float 3s ease-in-out infinite;
     }
 
+    /* แอนิเมชันตอนพูด */
+    .talking-mascot {
+      font-size: 75px;
+      margin: 15px 0;
+      display: inline-block;
+      animation: talk-bounce 0.5s infinite alternate ease-in-out;
+    }
+
     @keyframes float {
       0%, 100% { transform: translateY(0); }
       50% { transform: translateY(-10px); }
+    }
+
+    @keyframes talk-bounce {
+      0% { transform: scale(1) translateY(0); }
+      100% { transform: scale(1.1) translateY(-5px); }
     }
 
     h1 {
@@ -210,10 +223,10 @@
   </df-messenger>
 
   <script>
-    // 1. ฟังก์ชันส่งข้อความทะลุ Shadow DOM ไปหาบอท (ตัวเก่งของเรา)
+    // 1. ฟังก์ชันส่งข้อความทะลุ Shadow DOM ไปหาบอท
     function sendMessage(text) {
       const dfMessenger = document.querySelector('df-messenger');
-      dfMessenger.setAttribute('expand', 'true'); // สั่งเปิดแชท
+      dfMessenger.setAttribute('expand', 'true'); 
 
       setTimeout(() => {
         try {
@@ -230,9 +243,8 @@
       }, 500);
     }
 
-    // 2. ฟังก์ชันระบบจดจำเสียงพูด (Speech to Text)
+    // 2. ฟังก์ชันระบบจดจำเสียงพูด
     function startMic() {
-      // ตรวจสอบว่าเบราว์เซอร์รองรับการฟังเสียงไหม
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       
       if (!SpeechRecognition) {
@@ -241,48 +253,41 @@
       }
 
       const recognition = new SpeechRecognition();
-      recognition.lang = 'th-TH'; // ตั้งค่าเป็นภาษาไทย
+      recognition.lang = 'th-TH'; 
       recognition.interimResults = false;
 
       const btn = document.getElementById('micBtn');
       const text = document.getElementById('micText');
       const icon = document.getElementById('micIcon');
 
-      // เริ่มฟังเสียง
       recognition.start();
 
-      // เมื่อเริ่มฟัง ให้เปลี่ยน UI ปุ่มเป็นสีแดง
       recognition.onstart = function() {
         btn.classList.add('listening');
         text.innerText = "กำลังฟัง...";
         icon.innerText = "👂";
       };
 
-      // เมื่อได้ยินเสียงพูดจบแล้ว
       recognition.onresult = function(event) {
-        const transcript = event.results[0][0].transcript; // ข้อความที่เด็กพูด
+        const transcript = event.results[0][0].transcript; 
         
-        // โชว์หน้าต่างพี่หมอกำลังคิด
         Swal.fire({
           title: '<span style="color: #00acc1; font-family: Prompt;">ได้ยินว่า: "' + transcript + '"</span>',
           html: `<div style="font-size: 60px; margin: 10px 0; animation: float 1s infinite alternate;">👩‍⚕️💭</div>
                  <h4 style="color: #78909c;">รอพี่หมอคิดแป๊บนึงนะ...</h4>`,
           showConfirmButton: false,
-          timer: 1500 // โชว์ 1.5 วินาทีแล้วปิดไปเอง
+          timer: 1500 
         }).then(() => {
-          // ส่งคำพูดที่แปลงเป็นตัวหนังสือ เข้าไปในกล่องแชท
           sendMessage(transcript); 
         });
       };
 
-      // เมื่อฟังจบ (หรือเงียบไปนาน) ให้คืนค่าปุ่มกลับเป็นสีฟ้า
       recognition.onend = function() {
         btn.classList.remove('listening');
         text.innerText = "กดพูดได้เลย";
         icon.innerText = "🎤";
       };
 
-      // กรณีเกิด Error (เช่น ไม่ได้อนุญาตไมค์)
       recognition.onerror = function(event) {
         btn.classList.remove('listening');
         text.innerText = "กดพูดได้เลย";
@@ -293,22 +298,41 @@
       };
     }
 
-    // 3. ฟังก์ชันระบบเสียงพูดตอบกลับของพี่หมอ (Text-to-Speech)
+    // 3. ฟังก์ชันระบบเสียงพูดตอบกลับ + หน้าต่างโชว์ข้อความกลางจอ
     window.addEventListener('df-response-received', function (event) {
       try {
-        // ดึงข้อความที่พี่หมอ (บอท) พิมพ์ตอบกลับมา
         const botReply = event.detail.response.queryResult.fulfillmentText;
         
         if (botReply) {
-          // สั่งให้เบราว์เซอร์อ่านออกเสียงข้อความนั้น
+          // 3.1 เด้งหน้าต่างกลางจอ โชว์ภาพพี่หมอกำลังพูด พร้อมข้อความตัวใหญ่ๆ
+          Swal.fire({
+            title: '<span style="color: #00acc1; font-family: Prompt; font-size: 26px;">พี่หมอใจดีบอกว่า...</span>',
+            html: `
+              <div class="talking-mascot">👩‍⚕️💬</div>
+              <h3 style="color: #37474f; font-family: Prompt; font-weight: 400; line-height: 1.6; padding: 0 10px;">"${botReply}"</h3>
+            `,
+            showConfirmButton: true,
+            confirmButtonText: 'รับทราบค่ะ/ครับ 👍',
+            confirmButtonColor: '#00acc1',
+            backdrop: `rgba(224, 247, 250, 0.95)`, // พื้นหลังสีฟ้าทึบๆ ให้เด็กโฟกัส
+            allowOutsideClick: false // บังคับให้เด็กกดปุ่มรับทราบ เพื่อให้แน่ใจว่าอ่าน/ฟังจบแล้ว
+          });
+
+          // 3.2 สั่งให้เบราว์เซอร์อ่านออกเสียง
           const speech = new SpeechSynthesisUtterance(botReply);
-          speech.lang = 'th-TH'; // ตั้งค่าเป็นเสียงคนไทย
-          speech.rate = 0.9;     // ความเร็ว (0.9 จะช้าลงนิดนึง ให้เด็กๆ ฟังชัดเจน)
-          speech.pitch = 1.3;    // ปรับเสียงให้แหลมขึ้นนิดนึง (โทนเสียงจะดูใจดี เป็นมิตรมากขึ้น)
+          speech.lang = 'th-TH'; 
+          speech.rate = 0.9;     
+          speech.pitch = 1.3;    
           
-          // ยกเลิกเสียงที่กำลังพูดค้างอยู่ (ถ้ามี) แล้วเริ่มพูดประโยคใหม่
           window.speechSynthesis.cancel();
           window.speechSynthesis.speak(speech);
+
+          // (ตัวเลือกเสริม) สั่งให้หน้าต่างปิดเองอัตโนมัติเมื่อพูดจบ
+          speech.onend = function() {
+             // ตอนนี้ตั้งให้เด็กรอประมวลผลและกดปุ่มเอง 
+             // แต่ถ้าอยากให้ปิดเองอัตโนมัติเมื่อเสียงพูดจบ สามารถลบ // ข้างหน้าบรรทัดล่างออกได้ครับ
+             // Swal.close(); 
+          };
         }
       } catch (error) {
         console.error("ระบบเสียงพูดขัดข้อง:", error);
