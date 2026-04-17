@@ -34,7 +34,6 @@
       align-items: center;
       min-height: 100vh;
       color: var(--text-color);
-      /* ป้องกันการคลุมดำข้อความเวลาเด็กทัชหน้าจอ */
       user-select: none; 
     }
 
@@ -55,7 +54,6 @@
       animation: float 3s ease-in-out infinite;
     }
 
-    /* แอนิเมชันตอนพูด */
     .talking-mascot {
       font-size: 75px;
       margin: 15px 0;
@@ -87,7 +85,6 @@
       margin-bottom: 25px;
     }
 
-    /* 🎤 ส่วนของปุ่มไมค์ */
     .mic-container {
       margin: 30px 0;
       display: flex;
@@ -138,7 +135,6 @@
       display: inline-block;
     }
 
-    /* 🔘 ส่วนของปุ่มกดด่วน */
     .button-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -167,7 +163,6 @@
       transform: scale(0.95);
     }
 
-    /* ซ่อนกล่องแชทไว้ก่อน จะเด้งขึ้นมาเมื่อใช้งาน */
     df-messenger {
       --df-messenger-bot-message: #e0f7fa;
       --df-messenger-button-titlebar-color: #00acc1;
@@ -298,7 +293,6 @@
       };
     }
 
-    // โหลดรายชื่อเสียงพูดเตรียมไว้ก่อน
     window.speechSynthesis.onvoiceschanged = function() {
       window.speechSynthesis.getVoices();
     };
@@ -311,7 +305,7 @@
         if (botReply) {
           let autoCloseTimer; 
 
-          // 3.1 เด้งหน้าต่างกลางจอ (มีปุ่มกดสำหรับเด็กโต)
+          // 3.1 เด้งหน้าต่างกลางจอ 
           Swal.fire({
             title: '<span style="color: #00acc1; font-family: Prompt; font-size: 26px;">พี่หมอใจดีบอกว่า...</span>',
             html: `
@@ -324,39 +318,37 @@
             backdrop: `rgba(224, 247, 250, 0.95)`, 
             allowOutsideClick: false 
           }).then((result) => {
-            // ถ้ามีคนกดปุ่ม ให้หยุดพูดทันทีและยกเลิกเวลานับถอยหลัง
             if (result.isConfirmed) {
               window.speechSynthesis.cancel();
               clearTimeout(autoCloseTimer);
             }
           });
 
+          // 🌟 ลบอีโมจิออกก่อนอ่านออกเสียง เพื่อป้องกันเสียงสะดุด
+          const cleanTextToSpeak = botReply.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
+
           // 3.2 สั่งให้เบราว์เซอร์อ่านออกเสียง
-          const speech = new SpeechSynthesisUtterance(botReply);
+          const speech = new SpeechSynthesisUtterance(cleanTextToSpeak);
           speech.lang = 'th-TH'; 
           
-          // ระบบพยายามดึงเสียงผู้หญิงที่เพราะที่สุดมาใช้ (Kanya, Premwadee, หรือเสียงของ Google)
           const voices = window.speechSynthesis.getVoices();
           const thaiVoices = voices.filter(v => v.lang.includes('th'));
           
           if (thaiVoices.length > 0) {
-            // ค้นหาชื่อเสียงที่มักจะเป็นผู้หญิง
             let femaleVoice = thaiVoices.find(v => v.name.includes('Google') || v.name.includes('Kanya') || v.name.includes('Premwadee'));
-            
-            // ถ้าหาไม่เจอ ให้ใช้เสียงภาษาไทยเสียงแรกที่มีในเครื่อง
             if (!femaleVoice) {
               femaleVoice = thaiVoices[0]; 
             }
             speech.voice = femaleVoice;
           }
 
-          speech.rate = 0.85; // ปรับให้พูดช้าลงอีกนิด เด็กๆ จะได้ฟังทัน
-          speech.pitch = 1.4; // ปรับเสียงให้ดูเล็กและใจดีขึ้น    
+          // 🌟 ปรับให้เป็นธรรมชาติมากขึ้น ไม่ดัดเสียงเยอะเกินไป
+          speech.rate = 1.0;  // ความเร็วปกติ
+          speech.pitch = 1.1; // แหลมขึ้นนิดเดียวพอ   
           
           window.speechSynthesis.cancel(); 
           window.speechSynthesis.speak(speech); 
 
-          // 3.3 เมื่อพูดจบ ให้นับถอยหลัง 3 วินาที แล้วปิดอัตโนมัติ (สำหรับเด็กเล็ก)
           speech.onend = function() {
              autoCloseTimer = setTimeout(() => {
                Swal.close();
