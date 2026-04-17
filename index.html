@@ -178,6 +178,24 @@
       font-size: 13px;
       color: #b0bec5;
     }
+
+    /* ตกแต่งกรอบวิดีโอ YouTube */
+    .video-wrapper {
+      position: relative;
+      padding-bottom: 56.25%; /* อัตราส่วน 16:9 */
+      height: 0;
+      margin-top: 15px;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .video-wrapper iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
   </style>
 </head>
 <body>
@@ -218,7 +236,7 @@
   </df-messenger>
 
   <script>
-    // 1. ฟังก์ชันส่งข้อความทะลุ Shadow DOM ไปหาบอท
+    // 1. ฟังก์ชันส่งข้อความ
     function sendMessage(text) {
       const dfMessenger = document.querySelector('df-messenger');
       dfMessenger.setAttribute('expand', 'true'); 
@@ -238,7 +256,7 @@
       }, 500);
     }
 
-    // 2. ฟังก์ชันระบบจดจำเสียงพูด
+    // 2. ฟังก์ชันไมโครโฟน
     function startMic() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       
@@ -287,9 +305,6 @@
         btn.classList.remove('listening');
         text.innerText = "กดพูดได้เลย";
         icon.innerText = "🎤";
-        if(event.error === 'not-allowed') {
-          Swal.fire('แง!', 'คุณครูต้องกดอนุญาตให้ใช้ไมโครโฟนก่อนนะจ๊ะ', 'error');
-        }
       };
     }
 
@@ -297,26 +312,45 @@
       window.speechSynthesis.getVoices();
     };
 
-    // 3. ฟังก์ชันระบบเสียงพูดตอบกลับ + หน้าต่างโชว์ข้อความกลางจอ
+    // 3. ฟังก์ชันระบบเสียงพูดตอบกลับ + หน้าต่างโชว์ข้อความและวิดีโอ
     window.addEventListener('df-response-received', function (event) {
       try {
-        const botReply = event.detail.response.queryResult.fulfillmentText;
+        const rawBotReply = event.detail.response.queryResult.fulfillmentText;
         
-        if (botReply) {
+        if (rawBotReply) {
           let autoCloseTimer; 
+          let videoHtml = '';
+          let textForDisplay = rawBotReply;
 
-          // 3.1 เด้งหน้าต่างกลางจอ 
+          // 🌟 เช็กว่ามีลิ้งก์ YouTube อยู่ในข้อความไหม
+          const ytRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/i;
+          const match = rawBotReply.match(ytRegex);
+
+          if (match && match[1]) {
+            const videoId = match[1];
+            // สร้างกล่องวิดีโอ
+            videoHtml = `
+              <div class="video-wrapper">
+                <iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+              </div>`;
+            // ลบลิ้งก์ออกจากข้อความที่จะแสดงบนหน้าจอ
+            textForDisplay = rawBotReply.replace(match[0], '').trim();
+          }
+
+          // 3.1 เด้งหน้าต่างกลางจอ (แสดงข้อความ + วิดีโอถ้ามี)
           Swal.fire({
             title: '<span style="color: #00acc1; font-family: Prompt; font-size: 26px;">พี่หมอใจดีบอกว่า...</span>',
             html: `
               <div class="talking-mascot">👩‍⚕️💬</div>
-              <h3 style="color: #37474f; font-family: Prompt; font-weight: 400; line-height: 1.6; padding: 0 10px;">"${botReply}"</h3>
+              <h3 style="color: #37474f; font-family: Prompt; font-weight: 400; line-height: 1.6; padding: 0 10px;">"${textForDisplay}"</h3>
+              ${videoHtml}
             `,
             showConfirmButton: true, 
             confirmButtonText: 'รับทราบค่ะ/ครับ 👍',
             confirmButtonColor: '#00acc1',
             backdrop: `rgba(224, 247, 250, 0.95)`, 
-            allowOutsideClick: false 
+            allowOutsideClick: false,
+            width: '90%' // ขยายหน้าต่างให้กว้างขึ้นเผื่อโชว์วิดีโอ
           }).then((result) => {
             if (result.isConfirmed) {
               window.speechSynthesis.cancel();
@@ -324,8 +358,8 @@
             }
           });
 
-          // 🌟 ลบอีโมจิออกก่อนอ่านออกเสียง เพื่อป้องกันเสียงสะดุด
-          const cleanTextToSpeak = botReply.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
+          // 🌟 ลบอีโมจิและลิ้งก์ออก เพื่อเตรียมให้บอทอ่านออกเสียง
+          let cleanTextToSpeak = textForDisplay.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '');
 
           // 3.2 สั่งให้เบราว์เซอร์อ่านออกเสียง
           const speech = new SpeechSynthesisUtterance(cleanTextToSpeak);
@@ -342,17 +376,20 @@
             speech.voice = femaleVoice;
           }
 
-          // 🌟 ปรับให้เป็นธรรมชาติมากขึ้น ไม่ดัดเสียงเยอะเกินไป
-          speech.rate = 1.0;  // ความเร็วปกติ
-          speech.pitch = 1.1; // แหลมขึ้นนิดเดียวพอ   
+          speech.rate = 1.0;  
+          speech.pitch = 1.1;    
           
           window.speechSynthesis.cancel(); 
           window.speechSynthesis.speak(speech); 
 
           speech.onend = function() {
-             autoCloseTimer = setTimeout(() => {
-               Swal.close();
-             }, 3000); 
+             // ถ้ามีวิดีโอ เราจะให้หน้าต่างค้างไว้ เพื่อให้เด็กดูคลิปจนจบ (ต้องกดรับทราบเอง)
+             // แต่ถ้าไม่มีวิดีโอ ให้ปิดอัตโนมัติใน 3 วินาทีเหมือนเดิม
+             if (!match) {
+               autoCloseTimer = setTimeout(() => {
+                 Swal.close();
+               }, 3000); 
+             }
           };
           
         }
