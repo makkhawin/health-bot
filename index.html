@@ -239,7 +239,9 @@
     // 1. ฟังก์ชันส่งข้อความ
     function sendMessage(text) {
       const dfMessenger = document.querySelector('df-messenger');
-      dfMessenger.setAttribute('expand', 'true'); 
+      
+      // เอาบรรทัด dfMessenger.setAttribute('expand', 'true'); ออก
+      // เพื่อไม่ให้กล่องแชทเด้งขึ้นมาบังหน้าจอ
 
       setTimeout(() => {
         try {
@@ -384,7 +386,7 @@
 
           speech.onend = function() {
              // ถ้ามีวิดีโอ เราจะให้หน้าต่างค้างไว้ เพื่อให้เด็กดูคลิปจนจบ (ต้องกดรับทราบเอง)
-             // แต่ถ้าไม่มีวิดีโอ ให้ปิดอัตโนมัติใน 3 วินาทีเหมือนเดิม
+             // แต่ถ้าไม่มีวิดีโอ ให้ปิดอัตโนมัติใน 2 วินาทีเหมือนเดิม
              if (!match) {
                autoCloseTimer = setTimeout(() => {
                  Swal.close();
