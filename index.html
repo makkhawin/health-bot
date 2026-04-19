@@ -273,20 +273,19 @@
   </df-messenger>
 
   <script>
-    // 🌟 ฟังก์ชันเริ่มแอป (ทำงานเมื่อเด็กกดปุ่ม)
+    // ฟังก์ชันเริ่มแอป
     function startApp() {
-      // 1. ซ่อนหน้าจอเริ่มต้น
       document.getElementById('startScreen').style.display = 'none';
-      
-      // 2. แอบส่งข้อความว่า "สวัสดี" ไปหาบอท เพื่อปลุกให้พี่หมอทักทาย
-      // บราวเซอร์จะยอมให้อ่านออกเสียงแล้วเพราะเด็กเพิ่งกดปุ่มมา!
       sendMessage('สวัสดี'); 
     }
 
-    // 1. ฟังก์ชันส่งข้อความ (ปรับปรุงให้ดึงคำตอบได้ชัวร์ขึ้น)
+    // ฟังก์ชันส่งข้อความ (แบบเปิด-ปิดแชทแวบเดียว)
     function sendMessage(text, retryCount = 0) {
       const dfMessenger = document.querySelector('df-messenger');
       
+      // 🌟 สั่งเปิดหน้าต่างแชทขึ้นมาก่อน เพื่อให้ช่องพิมพ์ข้อความถูกสร้างขึ้นมา
+      if(dfMessenger) dfMessenger.setAttribute('expand', 'true'); 
+
       setTimeout(() => {
         try {
           const chat = dfMessenger.shadowRoot.querySelector('df-messenger-chat');
@@ -296,18 +295,25 @@
           const inputBox = userInput.shadowRoot.querySelector('input');
           const sendButton = userInput.shadowRoot.querySelector('button');
 
+          // พิมพ์ข้อความและกดส่ง
           inputBox.value = text;
           sendButton.click();
+          
+          // 🌟 พอส่งเสร็จ ให้รีบปิดหน้าต่างแชทซ่อนกลับไปทันที (เด็กๆ จะมองแทบไม่ทัน)
+          setTimeout(() => {
+            if(dfMessenger) dfMessenger.removeAttribute('expand');
+          }, 100);
+
         } catch (e) {
           console.log("กำลังรอโหลด...");
           if (retryCount < 5) {
-            sendMessage(text, retryCount + 1); // ถ้ายังไม่โหลด ให้ลองใหม่
+            sendMessage(text, retryCount + 1); 
           }
         }
       }, 500);
     }
 
-    // 2. ฟังก์ชันไมโครโฟน
+    // ฟังก์ชันไมโครโฟน
     function startMic() {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       
@@ -363,7 +369,7 @@
       window.speechSynthesis.getVoices();
     };
 
-    // 3. ฟังก์ชันระบบเสียงพูดตอบกลับ + หน้าต่างโชว์ข้อความและวิดีโอ
+    // ฟังก์ชันระบบเสียงพูดตอบกลับ + หน้าต่างโชว์ข้อความและวิดีโอ
     window.addEventListener('df-response-received', function (event) {
       try {
         const rawBotReply = event.detail.response.queryResult.fulfillmentText;
